@@ -1,4 +1,5 @@
 from aiohttp import web
+from pathlib import Path
 import aiofiles
 import asyncio
 import time
@@ -7,7 +8,9 @@ CHUNK_SIZE = 100 * 1024
 
 
 async def archive(request):
-    archive_hash = request.match_info.get('archive_hash', '7kna')
+    archive_hash = request.match_info.get('archive_hash', '')
+    if not Path(f'test_photos/{archive_hash}').exists():
+        raise web.HTTPNotFound(text='Ошибка 404: Архив не существует или был удалён')
     response = web.StreamResponse()
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     response.headers['Content-Type'] = 'application/zip, application/octet-stream'
