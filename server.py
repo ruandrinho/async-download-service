@@ -1,5 +1,6 @@
 from aiohttp import web
 from pathlib import Path
+from random import randint
 import aiofiles
 import asyncio
 import time
@@ -18,15 +19,23 @@ async def archive(request):
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     response.headers['Content-Type'] = 'application/zip, application/octet-stream'
     await response.prepare(request)
-    process = await asyncio.create_subprocess_shell(
-        f'zip -j -r - test_photos/{archive_hash}',
+    process = await asyncio.create_subprocess_exec(
+        'zip', '-jr', '-', f'test_photos/{archive_hash}',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
-    while not process.stdout.at_eof():
-        logger.info('Sending archive chunk...')
-        chunk = await process.stdout.read(CHUNK_SIZE)
-        await response.write(chunk)
+    try:
+        while not process.stdout.at_eof():
+            logger.info('Sending archive chunk...')
+            chunk = await process.stdout.read(CHUNK_SIZE)
+            await response.write(chunk)
+            await asyncio.sleep(randint(0, 15))
+    except asyncio.CancelledError:
+        logger.info('Download was interrupted')
+        process.kill()
+    except BaseException:
+        logger.info('Unknown error')
+        process.kill()
     return response
 
 
