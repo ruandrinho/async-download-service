@@ -3,6 +3,9 @@ from pathlib import Path
 import aiofiles
 import asyncio
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 100 * 1024
 
@@ -21,6 +24,7 @@ async def archive(request):
         stderr=asyncio.subprocess.PIPE
     )
     while not process.stdout.at_eof():
+        logger.info('Sending archive chunk...')
         chunk = await process.stdout.read(CHUNK_SIZE)
         await response.write(chunk)
     return response
@@ -33,6 +37,12 @@ async def handle_index_page(request):
 
 
 if __name__ == '__main__':
+
+    logging.basicConfig(
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+
     app = web.Application()
     app.add_routes([
         web.get('/', handle_index_page),
