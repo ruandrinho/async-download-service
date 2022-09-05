@@ -60,13 +60,13 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
 
-    CHUNK_SIZE = ContextVar('CHUNK_SIZE', default=env.int('CHUNK_SIZE'))
-    ENABLE_LOGGING = ContextVar('ENABLE_LOGGING', default=env.bool('ENABLE_LOGGING'))
+    CHUNK_SIZE = ContextVar('CHUNK_SIZE', default=env.int('CHUNK_SIZE', default=100000))
+    ENABLE_LOGGING = ContextVar('ENABLE_LOGGING', default=env.bool('ENABLE_LOGGING', default=True))
     IMITATE_UNSTABLE_CONNECTION = ContextVar(
         'IMITATE_UNSTABLE_CONNECTION',
-        default=env.bool('IMITATE_UNSTABLE_CONNECTION')
+        default=env.bool('IMITATE_UNSTABLE_CONNECTION', default=False)
     )
-    PHOTOS_PARENT_DIR = ContextVar('PHOTOS_PARENT_DIR', default=env('PHOTOS_PARENT_DIR'))
+    PHOTOS_PARENT_DIR = ContextVar('PHOTOS_PARENT_DIR', default=env('PHOTOS_PARENT_DIR', default='photos'))
 
     parser = argparse.ArgumentParser(description='Make archive of a folder and stream to a client')
     parser.add_argument('--nologs', '-n', action='store_true', help='Disable logging')
