@@ -1,2 +1,4 @@
-aiohttp==3.6.*
-aiofiles==0.4.0
+aiofiles==0.8.0
+aiohttp==3.8.1
+environs==9.5.0
+flake8==5.0.4
