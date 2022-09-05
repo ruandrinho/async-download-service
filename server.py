@@ -12,7 +12,7 @@ CHUNK_SIZE = 100 * 1024
 
 
 async def archive(request):
-    archive_hash = request.match_info.get('archive_hash', '')
+    archive_hash = request.match_info['archive_hash']
     if not Path(f'test_photos/{archive_hash}').exists():
         raise web.HTTPNotFound(text='Ошибка 404: Архив не существует или был удалён')
     response = web.StreamResponse()
@@ -29,13 +29,17 @@ async def archive(request):
             logger.info('Sending archive chunk...')
             chunk = await process.stdout.read(CHUNK_SIZE)
             await response.write(chunk)
-            await asyncio.sleep(randint(0, 15))
+            # if randint(0, 1000) == 0:
+            #     x = 5 / 0
     except asyncio.CancelledError:
         logger.info('Download was interrupted')
-        process.kill()
+    except KeyboardInterrupt:
+        logger.info('Server is terminated')
     except BaseException:
         logger.info('Unknown error')
+    finally:
         process.kill()
+        outs, errs = await process.communicate()
     return response
 
 
