@@ -93,4 +93,7 @@ if __name__ == '__main__':
             )
         ),
     ])
-    web.run_app(app)
+    try:
+        web.run_app(app)
+    except KeyboardInterrupt:
+        logger.info('Server is terminated')
