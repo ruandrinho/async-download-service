@@ -7,6 +7,7 @@ import aiofiles
 import asyncio
 import logging
 import argparse
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,9 @@ async def archive(request):
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     response.headers['Content-Type'] = 'application/zip, application/octet-stream'
     await response.prepare(request)
+    os.chdir(f'{photos_parent_dir}/{archive_hash}')
     process = await asyncio.create_subprocess_exec(
-        'zip', '-jr', '-', f'{photos_parent_dir}/{archive_hash}',
+        'zip', '-r', '-', '.',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
