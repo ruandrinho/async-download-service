@@ -36,13 +36,14 @@ async def archive(request):
                 await asyncio.sleep(randint(0, 5))
     except asyncio.CancelledError:
         logger.info('Download was interrupted')
-    except KeyboardInterrupt:
-        logger.info('Server is terminated')
+        raise
     except BaseException:
         logger.info('Unknown error')
     finally:
-        process.kill()
-        outs, errs = await process.communicate()
+        logger.info(process.returncode)
+        if not process.returncode:
+            process.kill()
+            outs, errs = await process.communicate()
     return response
 
 
