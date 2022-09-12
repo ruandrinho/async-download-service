@@ -7,13 +7,11 @@ import aiofiles
 import asyncio
 import logging
 import argparse
-import os
 
 logger = logging.getLogger(__name__)
 
 
-async def archive(request, **kwargs):
-    photos_parent_dir = kwargs['photos_parent_dir']
+async def archive(request, chunk_size, unstable_connection_simulation, photos_parent_dir):
     archive_hash = request.match_info['archive_hash']
     if not Path(f'{photos_parent_dir}/{archive_hash}').exists():
         raise web.HTTPNotFound(text='Ошибка 404: Архив не существует или был удалён')
@@ -21,18 +19,18 @@ async def archive(request, **kwargs):
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     response.headers['Content-Type'] = 'application/zip, application/octet-stream'
     await response.prepare(request)
-    os.chdir(f'{photos_parent_dir}/{archive_hash}')
     process = await asyncio.create_subprocess_exec(
         'zip', '-r', '-', '.',
+        cwd=f'{photos_parent_dir}/{archive_hash}',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
     try:
         while not process.stdout.at_eof():
             logger.info('Sending archive chunk...')
-            chunk = await process.stdout.read(kwargs['chunk_size'])
+            chunk = await process.stdout.read(chunk_size)
             await response.write(chunk)
-            if kwargs['imitate_unstable_connection']:
+            if unstable_connection_simulation:
                 await asyncio.sleep(randint(0, 5))
     except asyncio.CancelledError:
         logger.info('Download was interrupted')
@@ -40,7 +38,7 @@ async def archive(request, **kwargs):
     except BaseException:
         logger.info('Unknown error')
     finally:
-        if not process.returncode:
+        if process.returncode:
             process.kill()
             outs, errs = await process.communicate()
     return response
@@ -65,7 +63,7 @@ if __name__ == '__main__':
     archive_arguments = {}
     chunk_size = env.int('CHUNK_SIZE', default=100000)
     enable_logging = env.bool('ENABLE_LOGGING', default=True)
-    imitate_unstable_connection = env.bool('IMITATE_UNSTABLE_CONNECTION', default=False)
+    unstable_connection_simulation = env.bool('UNSTABLE_CONNECTION_SIMULATION', default=False)
     photos_parent_dir = env('PHOTOS_PARENT_DIR', default='photos')
 
     parser = argparse.ArgumentParser(description='Make archive of a folder and stream to a client')
@@ -76,7 +74,7 @@ if __name__ == '__main__':
     if args.nologs or not enable_logging:
         logger.setLevel(logging.ERROR)
     if args.unstable is True:
-        imitate_unstable_connection = True
+        unstable_connection_simulation = True
     if args.dir:
         photos_parent_dir = args.dir
 
@@ -88,7 +86,7 @@ if __name__ == '__main__':
             partial(
                 archive,
                 chunk_size=chunk_size,
-                imitate_unstable_connection=imitate_unstable_connection,
+                unstable_connection_simulation=unstable_connection_simulation,
                 photos_parent_dir=photos_parent_dir
             )
         ),
