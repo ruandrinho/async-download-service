@@ -38,7 +38,7 @@ async def archive(request, chunk_size, unstable_connection_simulation, photos_pa
     except BaseException:
         logger.info('Unknown error')
     finally:
-        if process.returncode:
+        if process.returncode is None:
             process.kill()
             outs, errs = await process.communicate()
     return response
